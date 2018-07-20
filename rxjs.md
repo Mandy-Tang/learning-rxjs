@@ -57,4 +57,62 @@ fromEvent(button, 'click').pipe(
 ```
 在这里，`scan` 的含义和操作数组的 `reduce` 类似，前一次回调函数的返回值会作为下一次回调函数的输入。然而和传统事件监听的写法相比，`count`在这个数据流的内部产生并暴露给观察者，不依赖于任何外部环境的值。
 
-## RxJS提供了很多功能的操作符以满足开发者对数据流的控制
+## RxJS提供了丰富的控制流的操作符
+再再再举个官网上的例子🌰🌰🌰。在之前的例子的基础上，如果我们要给点击事件加上额外的需求：只有当两次点击事件的时间间隔不小于1000毫秒时，才技术。没有RxJS的情况下我们会这样子写代码：
+```
+var count = 0;
+var rate = 1000;
+var lastClick = Date.now() - rate;
+var button = document.querySelector('button');
+button.addEventListener('click', () => {
+  if (Date.now() - lastClick >= rate) {
+    console.log(`Clicked ${++count} times`);
+    lastClick = Date.now();
+  }
+});
+```
+增加 `lastClick` 变量用于记录最近一次点击事件的时间，在时间监听回调函数里面判断与当前的时间间隔是否满足条件，若满足则计数，且更新 `lastClick`。
+那么如果用 RxJS ，这段逻辑可以这样写：
+```
+const { fromEvent } = rxjs;
+const { throttleTime, scan } = rxjs.operators;
+
+const button = document.querySelector('button');
+fromEvent(button, 'click').pipe(
+  throttleTime(1000),
+  scan(count => count + 1, 0)
+)
+.subscribe(count => console.log(`Clicked ${count} times`));
+```
+`throttleTime(1000)` 这里直接使用了 RxJS 提供的操作符 `throttleTime`，表示忽略数据流中时间间隔小于1000毫秒的值。使用简单且逻辑一目了然。RxJS为开发者提供了丰富的流控制操作符，具体请阅读 API 文档。
+
+## RxJS提供了丰富的数据处理操作符
+还是之前的例子，假设需求要求累积每次点击事件的X坐标，而不是点击的次数。事件监听回调函数接收当次事件为参数，在回调函数内部获取事件的X坐标，累积到 `count`。
+```
+let count = 0;
+const rate = 1000;
+let lastClick = Date.now() - rate;
+const button = document.querySelector('button');
+button.addEventListener('click', (event) => {
+  if (Date.now() - lastClick >= rate) {
+    count += event.clientX;
+    console.log(count)
+    lastClick = Date.now();
+  }
+});
+```
+使用 RxJS 我们可以这样写：
+```
+const { fromEvent } = rxjs;
+const { throttleTime, map, scan } = rxjs.operators;
+
+const button = document.querySelector('button');
+fromEvent(button, 'click').pipe(
+  throttleTime(1000),
+  map(event => event.clientX),
+  scan((count, clientX) => count + clientX, 0)
+)
+.subscribe(count => console.log(count));
+```
+`map` 对数据流中的每个值进行映射，返回坐标，并传递给下一个操作符。`scan` 做一个类似于 `reduce` 的操作，接收上一次的计算结果以及当前的值，经过计算之后，再发射给观察者。观察者接收到的是已经处理好的数据。
+RxJS 提供了大量类似的 API 以方便开发者做数据处理。我们可以看到这里的数据处理逻辑和函数式编程工具库 `Ramdajs` 的写法和 API 高度相似，`pipe` 和 `map` 我们都可以在 `Ramdajs` 中找到相同的 API，`scan` 对应的就是 `reduce`，这样我们是不是更能够理解 RxJS 可以像处理数据集合一样去处理异步事件？是不是更能体会到 RxJS 的纯函数特点？
