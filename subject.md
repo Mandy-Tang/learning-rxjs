@@ -47,6 +47,7 @@ observable.subscribe(subject);
 ```
 输出结果同上。
 通过这个例子，我们可以发现，利用 Subject 可以把单播的 Observable 转变成了多播。
+Subeject 有三个衍生类，`BehaviorSubject`，`ReplaySubject`，`AsyncSubject`。
 
 ## BehaviorSubject
 
@@ -80,5 +81,74 @@ observerB: 3
 ```
 
 ## ReplaySubject
+
+`ReplaySubject` 和 `BehaviorSubject` 类似，也可以把旧的值发送给新的 subscriber，不同的点在于，BehaviorSubject只能保留最后一个值，而 ReplaySubject 可以保留最近的一部分值。
+
+我们可以设置保留多少个值：
+```
+var subject = new Rx.ReplaySubject(3); // buffer 3 values for new subscribers
+
+subject.subscribe({
+  next: (v) => console.log('observerA: ' + v)
+});
+
+subject.next(1);
+subject.next(2);
+subject.next(3);
+subject.next(4);
+
+subject.subscribe({
+  next: (v) => console.log('observerB: ' + v)
+});
+
+subject.next(5);
+```
+输出为：
+```
+observerA: 1
+observerA: 2
+observerA: 3
+observerA: 4
+observerB: 2
+observerB: 3
+observerB: 4
+observerA: 5
+observerB: 5
+```
+在这里设置了保留 3 个值，所以 observerB subscribe 之后可以立马收到`2,3,4`，而不能收到 1。
+
+我们也可以设置一个窗口时间，表明保留在多久时间范围内以内的值：
+```
+var subject = new Rx.ReplaySubject(100, 500 /* windowTime */);
+
+subject.subscribe({
+  next: (v) => console.log('observerA: ' + v)
+});
+
+var i = 1;
+setInterval(() => subject.next(i++), 200);
+
+setTimeout(() => {
+  subject.subscribe({
+    next: (v) => console.log('observerB: ' + v)
+  });
+}, 1000);
+```
+输出为：
+```
+observerA: 1
+observerA: 2
+observerA: 3
+observerA: 4
+observerA: 5
+observerB: 3
+observerB: 4
+observerB: 5
+observerA: 6
+observerB: 6
+...
+
+```
+这里我们虽然设置了可以保留 100 个值，但是另外设置了 500ms 的窗口时间，在 ObserverB subscibe 的时候，ReplaySubject已经发送了值 `1,2,3,4,5`，但是只有 `4,5` 是在 500ms 之内发送的，所以只能收到 `4,5`。
 
 ## AsyncSubject
