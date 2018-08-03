@@ -152,3 +152,30 @@ observerB: 6
 这里我们虽然设置了可以保留 100 个值，但是另外设置了 500ms 的窗口时间，在 ObserverB subscibe 的时候，ReplaySubject已经发送了值 `1,2,3,4,5`，但是只有 `4,5` 是在 500ms 之内发送的，所以只能收到 `4,5`。
 
 ## AsyncSubject
+
+`AsyncSubject` 只会在执行结束后把最后一个执行结果发送给它的 observers。
+```
+var subject = new Rx.AsyncSubject();
+
+subject.subscribe({
+  next: (v) => console.log('observerA: ' + v)
+});
+
+subject.next(1);
+subject.next(2);
+subject.next(3);
+subject.next(4);
+
+subject.subscribe({
+  next: (v) => console.log('observerB: ' + v)
+});
+
+subject.next(5);
+subject.complete();
+```
+输出为：
+```
+observerA: 5
+observerB: 5
+```
+AsyncSubject 和 `last()` 操作符类似，等待完成通知后推送执行过程的最后一个值。
