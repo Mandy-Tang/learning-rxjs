@@ -50,6 +50,35 @@ observable.subscribe(subject);
 
 ## BehaviorSubject
 
+`BehaviorSubject` 是 Subject 的衍生类，其保留了一个当前值（即最后一次发生的值），每当有一个新的 Observer subscribe 它的时候，这个 Observer 会立即接受到这个当前值。
+在下面的例子中，我们用 0 初始化了一个 BehaviorSubject，当第一个 Observer subscribe 它的时候会立即收到值 0，之后这个 subject 发射了值 1 和 2，所以第二个 Observer subsribe 它时会立马收到值 2：
+```
+var subject = new Rx.BehaviorSubject(0); // 0 is the initial value
+
+subject.subscribe({
+  next: (v) => console.log('observerA: ' + v)
+});
+
+subject.next(1);
+subject.next(2);
+
+subject.subscribe({
+  next: (v) => console.log('observerB: ' + v)
+});
+
+subject.next(3);
+```
+输出应该为：
+```
+observerA: 0
+observerA: 1
+observerA: 2
+observerB: 2
+observerA: 3
+observerB: 3
+```
+
+
 ## ReplaySubject
 
 ## AsyncSubject
